@@ -2,9 +2,10 @@ import type { NextFunction, Request, Response } from "express";
 import type { Session, User } from "lucia";
 import { verifyRequestOrigin } from "lucia";
 import { lucia } from "..";
+import { Environment } from "../types/environment";
 
 export const protectionCSRF = (req: Request, res: Response, next: NextFunction) => {
-  if(process.env.env === 'DEV'){
+  if(process.env.env === Environment.DEVELOPMENT){
     return next();
   }
   if (req.method === "GET") {
@@ -12,9 +13,11 @@ export const protectionCSRF = (req: Request, res: Response, next: NextFunction) 
   }
   const originHeader = req.headers.origin ?? null;
   // NOTE: You may need to use `X-Forwarded-Host` instead
-  const hostHeader = req.headers.host ?? null;
-
-  if (!originHeader || !hostHeader || !verifyRequestOrigin(originHeader, [hostHeader,`localhost:${process.env.PORT}`])) {
+  const hostHeader = req.headers['x-forwarded-host'] ?? req.headers.host ?? null;
+  console.log('originHeader',originHeader);
+  console.log('hostHeader',hostHeader);
+  
+  if (!originHeader || !hostHeader || !verifyRequestOrigin(originHeader, [`localhost:${process.env.PORT}`])) {
     console.log('HELLO');
     return res.status(403).end();
   }
