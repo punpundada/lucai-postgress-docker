@@ -3,6 +3,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import * as users from "./db/user";
 import * as session from "./db/session";
+import * as emailVarification from './db/email-varification';
+import * as resetToken from './db/reset-token';
 import { userRoute } from "./routes/userRoute";
 import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle";
 import { Lucia, TimeSpan } from "lucia";
@@ -34,7 +36,12 @@ const connectDB = async () => {
 };
 await connectDB();
 
-export const db = drizzle(client, { schema: { ...users, ...session }, logger: false });
+export const db = drizzle(client, { schema: { 
+	...users, 
+	...session,
+	...emailVarification,
+	...resetToken
+}, logger: false });
 
 export const adapter =new DrizzlePostgreSQLAdapter(db, session.sessionsSchema, users.userSchema);
 
