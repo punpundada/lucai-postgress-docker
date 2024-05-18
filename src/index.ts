@@ -21,6 +21,7 @@ declare module "lucia" {
         email: string;
         name:string;
         id:string
+		email_verified: boolean;
     }
 }
 
@@ -33,7 +34,7 @@ const connectDB = async () => {
 };
 await connectDB();
 
-export const db = drizzle(client, { schema: { ...users, ...session }, logger: true });
+export const db = drizzle(client, { schema: { ...users, ...session }, logger: false });
 
 export const adapter =new DrizzlePostgreSQLAdapter(db, session.sessionsSchema, users.userSchema);
 

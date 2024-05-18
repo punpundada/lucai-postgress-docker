@@ -13,8 +13,6 @@ export const protectionCSRF = (req: Request, res: Response, next: NextFunction) 
   const originHeader = req.headers.origin ?? null;
   // NOTE: You may need to use `X-Forwarded-Host` instead
   const hostHeader = req.headers.host ?? null;
-  console.log("hostHeader",hostHeader)
-  console.log("originHeader",originHeader)
 
   if (!originHeader || !hostHeader || !verifyRequestOrigin(originHeader, [hostHeader,`localhost:${process.env.PORT}`])) {
     console.log('HELLO');
@@ -28,7 +26,6 @@ export const validateSessionCookies = async (
   next: NextFunction
 ) => {
   const sessionId = lucia.readSessionCookie(req.headers.cookie ?? "");
-  console.log(req.headers['Authorization'],"req.headers['Authorization']")
   // const authorizationHeader = req?.headers?.get("Authorization");
   // const ss = lucia.readBearerToken(req?.headers?.get('') ?? '')
   if (!sessionId) {

@@ -8,19 +8,18 @@ import { userSchema } from "../db/user";
 import type { Res } from "../types/Response";
 import { ZodError, z } from "zod";
 import { eq } from "drizzle-orm";
+import { transporter } from "../utils/transporter";
 
 export const signup = async (
   req: Request<unknown, unknown, userInsert>,
   res: Response<Res<any>>
 ) => {
-  console.log("req.body", req.body);
   const userId = generateIdFromEntropySize(10); // 16 characters long
   try {
     const validUser = userZodSchema.parse(req.body);
     validUser.id = userId;
     const hashedPassword = await hash(validUser.password, hashOptions);
     validUser.password = hashedPassword;
-    console.log(validUser);
 
     const savedUser = await db
       .insert(userSchema)
@@ -60,7 +59,6 @@ export const login = async (
   req: Request<unknown, unknown, { email: string; password: string }>,
   res: Response<Res<{ email: string; name: string; id: string }>>
 ) => {
-  console.log("LOGIN");
   try {
     const validEmail = z.string().parse(req.body.email);
     const validPassword = z.string().parse(req.body.password);
@@ -85,6 +83,8 @@ export const login = async (
         message: "Invalid email or password",
       });
     }
+
+
 
     const session = await lucia.createSession(user.id, { ip_country: "INDIA" });
     const sessionCookie = lucia.createSessionCookie(session.id);
