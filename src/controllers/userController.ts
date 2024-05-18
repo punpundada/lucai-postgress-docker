@@ -9,6 +9,7 @@ import type { Res } from "../types/Response";
 import { ZodError, z } from "zod";
 import { eq } from "drizzle-orm";
 import { transporter } from "../utils/transporter";
+import { emailOtpHTML } from "../views/emailOPT";
 
 export const signup = async (
   req: Request<unknown, unknown, userInsert>,
