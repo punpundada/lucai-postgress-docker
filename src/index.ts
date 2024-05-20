@@ -8,6 +8,7 @@ import * as resetToken from './db/reset-token';
 import { userRoute } from "./routes/userRoute";
 import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle";
 import { Lucia, TimeSpan } from "lucia";
+import { protectionCSRF } from "./middleware/authMiddleware";
 export const connectionString = `postgres://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@localhost:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`;
 
 declare module "lucia" {
@@ -68,6 +69,7 @@ export const lucia = new Lucia(adapter, {
 
 const app = express();
 app.use(express.json())
+app.use(protectionCSRF)
 app.use('/api/user',userRoute)
 
 app.listen(4000, () => {
