@@ -13,12 +13,19 @@ export const protectionCSRF = (req: Request, res: Response, next: NextFunction) 
   }
   const originHeader = req.headers.origin ?? null;
   // NOTE: You may need to use `X-Forwarded-Host` instead
-  const hostHeader = req.headers['x-forwarded-host'] ?? req.headers.host ?? null;
-  console.log('originHeader',originHeader);
-  console.log('hostHeader',hostHeader);
-  
-  if (!originHeader || !hostHeader || !verifyRequestOrigin(originHeader, [`localhost:${process.env.PORT}`])) {
-    console.log('HELLO');
+  const hostHeader = req.headers["x-forwarded-host"] ?? req.headers.host ?? null;
+  console.log("originHeader", originHeader);
+  console.log("hostHeader", hostHeader);
+
+  if (
+    !originHeader ||
+    !hostHeader ||
+    !verifyRequestOrigin(
+      originHeader,
+      typeof hostHeader === "string" ? [hostHeader] : hostHeader
+    )
+  ) {
+    console.log("HELLO");
     return res.status(403).end();
   }
 };
@@ -49,12 +56,11 @@ export const validateSessionCookies = async (
   return next();
 };
 
-
 declare global {
-	namespace Express {
-		interface Locals {
-			user: User | null;
-			session: Session | null;
-		}
-	}
+  namespace Express {
+    interface Locals {
+      user: User | null;
+      session: Session | null;
+    }
+  }
 }

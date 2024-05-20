@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:16.3-alpine3.18
     container_name: My_DB
-    restart: on-failure:3
+    restart: unless-stopped
     volumes:
-      # - .: /dev/shm
+      # - .:/dev/shm
       - /db-data:/var/lib/postgresql/data
     env_file:
       - path: .env
