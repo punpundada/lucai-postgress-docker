@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { protectionCSRF, validateSessionCookies } from "../middleware/authMiddleware";
-import { signup,login, emailVerification } from "../controllers/userController";
+import { protectionCSRF, validateSessionCookies, } from "../middleware/authMiddleware";
+import { signup,login, emailVerification, resetPassword } from "../controllers/userController";
 
 export const userRoute = Router();
 
-userRoute.post('/signup',protectionCSRF,signup)
+userRoute.post('/signup',signup)
 userRoute.post('/login',protectionCSRF,validateSessionCookies,login)
 userRoute.post('/email-verification',protectionCSRF,validateSessionCookies,emailVerification)
+userRoute.post('/reset-password',resetPassword)
 

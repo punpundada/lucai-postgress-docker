@@ -15,6 +15,8 @@ import { verifyVerificationCode } from "../utils/verifyVerificationCode";
 import { emailVarificationSchema } from "../db/email-varification";
 import { TimeSpan, createDate } from "oslo";
 import { sessionsSchema } from "../db/session";
+import { createPasswordResetToken } from "../utils/createPasswordResetToken";
+import { Environment } from "../types/environment";
 
 export const signup = async (
   req: Request<unknown, unknown, userInsert>,
@@ -155,7 +157,8 @@ export const login = async (
 
     res.set("Location", "/");
     res.set("Set-Cookie", sessionCookie.serialize());
-
+    
+    console.log(req.headers);
     return res.status(200).json({
       isSuccess: true,
       message: "User login success",
@@ -166,6 +169,7 @@ export const login = async (
         email_verified:!!user.email_verified
       },
     });
+    
   } catch (err: any) {
     if (err instanceof ZodError) {
       return res.status(201).json({
@@ -240,3 +244,35 @@ export const emailVerification = async (
     });
   }
 };
+
+
+export const resetPassword = async (req:Request<unknown,unknown,{email:string}>,res:Response<Res<{email:string}>>) => {
+  try {
+    const validEmail = z.string().parse(req.body.email);
+    const user = await db.query.userSchema.findFirst({
+      where:({email},{eq})=>eq(email,validEmail)
+    })
+    if(!user){
+      return res.status(404).json({
+        isSuccess:false,
+        issues:[],
+        message:"User not found"
+      })
+    }
+    const verificationToken = await createPasswordResetToken(user.id);
+    let verificationLink = ''
+    if(process.env.FRONT_END_BASE_URL){
+      verificationLink = `${process.env.FRONT_END_BASE_URL}/reset-password/${verificationToken}`
+    }else{
+      if(process.env.env === Environment.DEVELOPMENT){
+        verificationLink = `http://localhost:${process.env.PORT}/reset-password/${verificationToken}`
+      }else{
+        verificationLink = `${process.env.PRODUCTION_BASE_URL}/reset-password/${verificationToken}`
+      }
+    }
+    
+
+  } catch (error) {
+    
+  }
+}
