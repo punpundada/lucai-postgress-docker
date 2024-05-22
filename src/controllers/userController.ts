@@ -14,9 +14,8 @@ import { generateEmailVerificationCode } from "../utils/generateEmailVerificatio
 import { verifyVerificationCode } from "../utils/verifyVerificationCode";
 import { emailVarificationSchema } from "../db/email-varification";
 import { TimeSpan, createDate } from "oslo";
-import { sessionsSchema } from "../db/session";
 import { createPasswordResetToken } from "../utils/createPasswordResetToken";
-import { Environment } from "../types/environment";
+import { resetPasswordView } from "../views/reset-password";
 
 export const signup = async (
   req: Request<unknown, unknown, userInsert>,
@@ -66,7 +65,6 @@ export const signup = async (
         validFor: "15 mins",
       }),
     });
-
 
     //setHeaders
     res.set("Location", "/");
@@ -125,7 +123,7 @@ export const signup = async (
 
 export const login = async (
   req: Request<unknown, unknown, { email: string; password: string }>,
-  res: Response<Res<{ email: string; name: string; id: string,email_verified:boolean }>>
+  res: Response<Res<{ email: string; name: string; id: string; email_verified: boolean }>>
 ) => {
   try {
     const validEmail = z.string().parse(req.body.email);
@@ -157,7 +155,7 @@ export const login = async (
 
     res.set("Location", "/");
     res.set("Set-Cookie", sessionCookie.serialize());
-    
+
     console.log(req.headers);
     return res.status(200).json({
       isSuccess: true,
@@ -166,10 +164,9 @@ export const login = async (
         email: user.email,
         id: user.id,
         name: user.name,
-        email_verified:!!user.email_verified
+        email_verified: !!user.email_verified,
       },
     });
-    
   } catch (err: any) {
     if (err instanceof ZodError) {
       return res.status(201).json({
@@ -245,34 +242,55 @@ export const emailVerification = async (
   }
 };
 
-
-export const resetPassword = async (req:Request<unknown,unknown,{email:string}>,res:Response<Res<{email:string}>>) => {
+export const resetPassword = async (
+  req: Request<unknown, unknown, { email: string }>,
+  res: Response<Res<{ email: string }>>
+) => {
   try {
     const validEmail = z.string().parse(req.body.email);
     const user = await db.query.userSchema.findFirst({
-      where:({email},{eq})=>eq(email,validEmail)
-    })
-    if(!user){
+      where: ({ email }, { eq }) => eq(email, validEmail),
+    });
+    if (!user) {
       return res.status(404).json({
-        isSuccess:false,
-        issues:[],
-        message:"User not found"
-      })
+        isSuccess: false,
+        issues: [],
+        message: "User not found",
+      });
     }
     const verificationToken = await createPasswordResetToken(user.id);
-    let verificationLink = ''
-    if(process.env.FRONT_END_BASE_URL){
-      verificationLink = `${process.env.FRONT_END_BASE_URL}/reset-password/${verificationToken}`
-    }else{
-      if(process.env.env === Environment.DEVELOPMENT){
-        verificationLink = `http://localhost:${process.env.PORT}/reset-password/${verificationToken}`
-      }else{
-        verificationLink = `${process.env.PRODUCTION_BASE_URL}/reset-password/${verificationToken}`
-      }
-    }
-    
 
-  } catch (error) {
-    
+    const verificationLink = `${req.headers.origin}/reset-password/${verificationToken}`;
+    // const verificationLink = `http://localhost:5173/reset-password/${verificationToken}`;
+
+    const email = await transporter.sendMail({
+      from: process.env.FROM_EMAIL,
+      subject: "Password Reset Request",
+      to: validEmail,
+      html: resetPasswordView({ redirectURL: verificationLink }),
+    });
+
+    if (email.rejected) {
+      res.status(404);
+    }
+    res.status(200).json({
+      isSuccess: true,
+      message: "Email send successfully",
+      result: { email: validEmail },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(201).json({
+        isSuccess: false,
+        message: error.message,
+        issues: error.issues,
+      });
+    }
+
+    return res.status(201).json({
+      isSuccess: false,
+      message: error.message,
+      issues: [],
+    });
   }
-}
+};

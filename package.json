@@ -3,10 +3,13 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "bun --watch run src/index.ts",
     "generate": "drizzle-kit generate",
     "studio": "drizzle-kit studio --port 8778",
-    "migrate": "drizzle-kit migrate"
+    "migrate": "drizzle-kit migrate",
+    "build":"bun build ./src/index.ts --outdir ./dist --target bun",
+    "start":"bun run build/index.js",
+    "build:start":"bun run build && bun run start"
   },
   "devDependencies": {
     "@types/bun": "latest",

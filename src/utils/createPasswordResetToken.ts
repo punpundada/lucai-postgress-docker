@@ -11,7 +11,7 @@ export async function createPasswordResetToken(userId: string): Promise<string> 
   const tokenId = generateIdFromEntropySize(25); // 40 character
   const tokenHash = encodeHex(await sha256(new TextEncoder().encode(tokenId)));
   db.insert(resetTokenSchema).values({
-    expiresAt:createDate(new TimeSpan(2, "h")),
+    expiresAt:createDate(new TimeSpan(15, "m")),
     tokenHash,
     userId
   });
