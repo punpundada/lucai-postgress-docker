@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { userZodSchema, type userInsert } from "../types/userTypes";
 import { generateIdFromEntropySize } from "lucia";
 import { hash, verify } from "@node-rs/argon2";
-import { hashOptions } from "../utils";
+import { getHashedToken, hashOptions } from "../utils/utils";
 import { db, lucia } from "..";
 import { userSchema } from "../db/user";
 import type { Res } from "../types/Response";
@@ -13,9 +13,13 @@ import { emailOtpHTML } from "../views/emailOPT";
 import { generateEmailVerificationCode } from "../utils/generateEmailVerificationCode";
 import { verifyVerificationCode } from "../utils/verifyVerificationCode";
 import { emailVarificationSchema } from "../db/email-varification";
-import { TimeSpan, createDate } from "oslo";
+import { TimeSpan, createDate, isWithinExpirationDate } from "oslo";
 import { createPasswordResetToken } from "../utils/createPasswordResetToken";
 import { resetPasswordView } from "../views/reset-password";
+import { PasswordType } from "../types/until-types";
+import { encodeHex } from "oslo/encoding";
+import { sha256 } from "oslo/crypto";
+import { resetTokenSchema } from "../db/reset-token";
 
 export const signup = async (
   req: Request<unknown, unknown, userInsert>,
@@ -156,7 +160,6 @@ export const login = async (
     res.set("Location", "/");
     res.set("Set-Cookie", sessionCookie.serialize());
 
-    console.log(req.headers);
     return res.status(200).json({
       isSuccess: true,
       message: "User login success",
@@ -242,7 +245,7 @@ export const emailVerification = async (
   }
 };
 
-export const resetPassword = async (
+export const sendResetPasswordEmail = async (
   req: Request<unknown, unknown, { email: string }>,
   res: Response<Res<{ email: string }>>
 ) => {
@@ -259,7 +262,6 @@ export const resetPassword = async (
       });
     }
     const verificationToken = await createPasswordResetToken(user.id);
-
     const verificationLink = `${req.headers.origin}/reset-password/${verificationToken}`;
     // const verificationLink = `http://localhost:5173/reset-password/${verificationToken}`;
 
@@ -270,15 +272,87 @@ export const resetPassword = async (
       html: resetPasswordView({ redirectURL: verificationLink }),
     });
 
-    if (email.rejected) {
-      res.status(404);
-    }
+    // if (email.rejected) {
+    //   res.status(404);
+    // }
     res.status(200).json({
       isSuccess: true,
       message: "Email send successfully",
       result: { email: validEmail },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return res.status(201).json({
+        isSuccess: false,
+        message: error.message,
+        issues: error.issues,
+      });
+    }
+
+    return res.status(201).json({
+      isSuccess: false,
+      message: error.message,
+      issues: [],
+    });
+  }
+};
+
+export const verifyAndResetPassword = async (
+  req: Request<{ token: string }, unknown, { password: string }>,
+  res: Response<Res<string>>
+) => {
+  try {
+    const validPassword = PasswordType.parse(req.body.password);
+    const verificationToken = req.params.token;
+    const hashedToken = await getHashedToken(verificationToken)
+
+    const savedToken = await db.query.resetTokenSchema.findFirst({
+      where: eq(resetTokenSchema.tokenHash, hashedToken),
+    });
+
+    if (!savedToken) {
+      return res.status(400).json({
+        isSuccess: false,
+        issues: [],
+        message: "Someting went wrong",
+      });
+    }
+    if (!isWithinExpirationDate(savedToken.expiresAt)) {
+      return res.status(400).json({
+        isSuccess: false,
+        issues: [],
+        message: "Timeout",
+      });
+    }
+
+    const deleteHash =  db.delete(resetTokenSchema).where(eq(resetTokenSchema.tokenHash, hashedToken));
+    await lucia.invalidateUserSessions(savedToken.userId);
+
+    const passwordHash = await hash(validPassword, hashOptions);
+
+    await db
+      .update(userSchema)
+      .set({ password: passwordHash })
+      .where(eq(userSchema.id, savedToken.userId));
+
+    const session = await lucia.createSession(savedToken.userId, { ip_country: "INDIA" });
+
+    const sessionCookie = lucia.createSessionCookie(session.id);
+    await deleteHash
+    return res
+      .status(302)
+      .json({
+        isSuccess: true,
+        message: "Password reset successfully",
+        result: "Success",
+      })
+      .header({
+        Location: "/",
+        "Set-Cookie": sessionCookie.serialize(),
+        "Referrer-Policy": "no-referrer",
+      });
+  } catch (error: any) {
+    console.log(error);
     if (error instanceof ZodError) {
       return res.status(201).json({
         isSuccess: false,
