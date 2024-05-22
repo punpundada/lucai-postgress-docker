@@ -81,7 +81,7 @@ export const signup = async (
     });
   } catch (error: any) {
     if (error instanceof ZodError) {
-      return res.status(201).json({
+      return res.status(400).json({
         isSuccess: false,
         message: error.message,
         issues: error.issues,
@@ -117,7 +117,7 @@ export const signup = async (
     //   }
     // }
 
-    return res.status(201).json({
+    return res.status(400).json({
       isSuccess: false,
       message: error.message,
       issues: [],
