@@ -3,17 +3,21 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "bun --watch run src/index.ts",
     "generate": "drizzle-kit generate",
     "studio": "drizzle-kit studio --port 8778",
-    "migrate": "drizzle-kit migrate"
+    "migrate": "drizzle-kit migrate",
+    "build":"bun build ./src/index.ts --outdir ./build --target bun",
+    "start":"bun run build/index.js",
+    "build:start":"bun run build && bun run start"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/express": "^4.17.21",
     "@types/nodemailer": "^6.4.15",
     "@types/pg": "^8.11.6",
-    "drizzle-kit": "^0.21.2"
+    "drizzle-kit": "^0.21.2",
+    "typescript": "^5.4.5"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

@@ -17,20 +17,41 @@ import { TimeSpan, createDate } from "oslo";
 import { sessionsSchema } from "../db/session";
 import { createPasswordResetToken } from "../utils/createPasswordResetToken";
 import { Environment } from "../types/environment";
+import { serviceSchema } from "../db/service";
 
 export const signup = async (
   req: Request<unknown, unknown, userInsert>,
   res: Response<Res<any>>
 ) => {
+  try {
+
+
+  } catch (error) {
+    
+  }
   const userId = generateIdFromEntropySize(10); // 16 characters long
   try {
+    // res.locals.serviceId
     //validating user body
     const validUser = userZodSchema.parse(req.body);
+
+    const service = await db.query.serviceSchema.findFirst({
+      where:eq(serviceSchema.id,req.body.serviceId)
+    })
+
+    if(!service){
+      res.status(404).json({
+        isSuccess:false,
+        issues:[],
+        message:"Service associated with user not found"
+      })
+    }
+
     validUser.id = userId;
     //hashing password
     const hashedPassword = await hash(validUser.password, hashOptions);
     validUser.password = hashedPassword;
-
+    validUser.serviceId=1;
     //saving user to db
     const savedUser = await db
       .insert(userSchema)
@@ -61,7 +82,7 @@ export const signup = async (
       subject: "Varification OTP",
       to: savedUser[0].email,
       html: emailOtpHTML({
-        name: "Auth Service",
+        name: service?.name!,
         otp: verificationCode,
         validFor: "15 mins",
       }),
@@ -158,7 +179,6 @@ export const login = async (
     res.set("Location", "/");
     res.set("Set-Cookie", sessionCookie.serialize());
     
-    console.log(req.headers);
     return res.status(200).json({
       isSuccess: true,
       message: "User login success",
@@ -259,19 +279,27 @@ export const resetPassword = async (req:Request<unknown,unknown,{email:string}>,
         message:"User not found"
       })
     }
-    const verificationToken = await createPasswordResetToken(user.id);
-    let verificationLink = ''
-    if(process.env.FRONT_END_BASE_URL){
-      verificationLink = `${process.env.FRONT_END_BASE_URL}/reset-password/${verificationToken}`
-    }else{
-      if(process.env.env === Environment.DEVELOPMENT){
-        verificationLink = `http://localhost:${process.env.PORT}/reset-password/${verificationToken}`
-      }else{
-        verificationLink = `${process.env.PRODUCTION_BASE_URL}/reset-password/${verificationToken}`
-      }
+    const url = req.headers['redirect-url']
+    if(!url && typeof url !== 'string'){
+      res.status(400).json({
+        isSuccess:false,
+        issues:[],
+        message:`'redirect-url' header missing`
+      })
     }
+    const verificationToken = await createPasswordResetToken(user.id);
+    // let verificationLink = ''
+    // if(process.env.FRONT_END_BASE_URL){
+    //   verificationLink = `${process.env.FRONT_END_BASE_URL}/reset-password/${verificationToken}`
+    // }else{
+    //   if(process.env.env === Environment.DEVELOPMENT){
+    //     verificationLink = `http://localhost:${process.env.PORT}/reset-password/${verificationToken}`
+    //   }else{
+    //     verificationLink = `${process.env.PRODUCTION_BASE_URL}/reset-password/${verificationToken}`
+    //   }
+    // }
     
-
+    let redirectLink = `http://localhost:${process.env.PORT}/reset-password/${verificationToken}`
   } catch (error) {
     
   }

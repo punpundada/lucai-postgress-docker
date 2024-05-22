@@ -7,6 +7,8 @@ export default defineConfig({
  'src/db/session.ts',
  'src/db/email-varification.ts',
  'src/db/reset-token.ts',
+ 'src/db/service.ts',
+//  'src/db/index.ts',
 ],
   dialect: 'postgresql',
   dbCredentials: {

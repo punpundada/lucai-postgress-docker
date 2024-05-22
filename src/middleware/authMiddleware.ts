@@ -56,6 +56,8 @@ export const validateSessionCookies = async (
   return next();
 };
 
+// export const serviceGetter
+
 declare global {
   namespace Express {
     interface Locals {

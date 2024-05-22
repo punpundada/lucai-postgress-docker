@@ -1,14 +1,17 @@
 import express from "express";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
-import * as users from "./db/user";
-import * as session from "./db/session";
-import * as emailVarification from './db/email-varification';
-import * as resetToken from './db/reset-token';
+import schema from './db/';
+// import * as user from './db/user';
+// import * as session from './db/session';
+// import * as services from './db/service';
+// import * as emailVerification from './db/email-varification';
+// import * as resetToken from './db/reset-token';
 import { userRoute } from "./routes/userRoute";
 import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle";
 import { Lucia, TimeSpan } from "lucia";
 import { protectionCSRF } from "./middleware/authMiddleware";
+import { serviceRoute } from "./routes/serviceRoute";
 export const connectionString = `postgres://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@localhost:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`;
 
 declare module "lucia" {
@@ -37,14 +40,9 @@ const connectDB = async () => {
 };
 await connectDB();
 
-export const db = drizzle(client, { schema: { 
-	...users, 
-	...session,
-	...emailVarification,
-	...resetToken
-}, logger: false });
+export const db = drizzle(client, { schema, logger: false });
 
-export const adapter =new DrizzlePostgreSQLAdapter(db, session.sessionsSchema, users.userSchema);
+export const adapter =new DrizzlePostgreSQLAdapter(db, schema.sessionsSchema, schema.userSchema);
 
 export const lucia = new Lucia(adapter, {
 	sessionExpiresIn: new TimeSpan(2, "w"), // 2 weeks
@@ -71,6 +69,7 @@ const app = express();
 app.use(express.json())
 app.use(protectionCSRF)
 app.use('/api/user',userRoute)
+app.use('/api/service',serviceRoute)
 
 app.listen(4000, () => {
   console.log(`server started on http://localhost:${process.env.PORT}/api`);

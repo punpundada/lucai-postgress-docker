@@ -5,7 +5,7 @@ import { signup,login, emailVerification, resetPassword } from "../controllers/u
 export const userRoute = Router();
 
 userRoute.post('/signup',signup)
-userRoute.post('/login',login)
+userRoute.post('/login',protectionCSRF,login)
 userRoute.post('/email-verification',validateSessionCookies,emailVerification)
-userRoute.post('/reset-password',resetPassword)
+userRoute.post('/reset-password',protectionCSRF,resetPassword)
 

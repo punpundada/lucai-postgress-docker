@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
       # - .:/dev/shm
-      - /db-data:/var/lib/postgresql/data
+      - ~/db-data:/var/lib/postgresql/data
     env_file:
       - path: .env
         required: true
