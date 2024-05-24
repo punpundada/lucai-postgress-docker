@@ -1,6 +1,27 @@
 version: '3.8'
 
 services:
+  backend:
+    env_file:
+      - .env
+    environment:
+      - DB_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
+    container_name: auth_backend
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT}:${PORT}"
+    depends_on:
+      - db
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /usr/src/app/src
+        - action: rebuild
+          path: package.json
+
   db:
     image: postgres:16.3-alpine3.18
     container_name: My_DB

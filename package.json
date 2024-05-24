@@ -7,9 +7,9 @@
     "generate": "drizzle-kit generate",
     "studio": "drizzle-kit studio --port 8778",
     "migrate": "drizzle-kit migrate",
-    "build":"bun build ./src/index.ts --outdir ./dist --target bun",
-    "start":"bun run build/index.js",
-    "build:start":"bun run build && bun run start"
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
+    "start": "bun run build/index.js",
+    "build:start": "bun run build && bun run start"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@lucia-auth/adapter-drizzle": "^1.0.7",
-    "@node-rs/argon2": "^1.8.3",
     "drizzle-orm": "^0.30.10",
     "drizzle-zod": "^0.5.1",
     "express": "^4.19.2",

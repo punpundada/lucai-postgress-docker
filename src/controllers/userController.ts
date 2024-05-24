@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 import { userZodSchema, type userInsert } from "../types/userTypes";
 import { generateIdFromEntropySize } from "lucia";
-import { hash, verify } from "@node-rs/argon2";
 import { getHashedToken, hashOptions } from "../utils/utils";
 import { db, lucia } from "..";
 import { userSchema } from "../db/user";
@@ -19,6 +18,7 @@ import { resetPasswordView } from "../views/reset-password";
 import { PasswordType } from "../types/until-types";
 import { resetTokenSchema } from "../db/reset-token";
 import { sessionsSchema } from "../db/session";
+import {password} from "bun"
 
 export const signup = async (
   req: Request<unknown, unknown, userInsert>,
@@ -30,15 +30,21 @@ export const signup = async (
     const validUser = userZodSchema.parse(req.body);
     validUser.id = userId;
     //hashing password
-    const hashedPassword = await hash(validUser.password, hashOptions);
+    // const hashedPassword = await hash(validUser.password, hashOptions);
+    const hashedPassword = await password.hash(validUser.password, {
+      algorithm:'argon2d',
+      timeCost:hashOptions.timeCost,
+      memoryCost:hashOptions.memoryCost,
+    });
     validUser.password = hashedPassword;
-
+    
     //saving user to db
     const savedUser = await db
-      .insert(userSchema)
-      .values(validUser as userInsert)
-      .returning({ email: userSchema.email, name: userSchema.name, id: userSchema.id });
-
+    .insert(userSchema)
+    .values(validUser as userInsert)
+    .returning({ email: userSchema.email, name: userSchema.name, id: userSchema.id });
+    
+    console.log('inside signup')
     //generating session cookie from lucia
     const session = await lucia.createSession(userId, { ip_country: "INDIA" });
     const sessionCookie = lucia.createSessionCookie(session.id);
@@ -72,13 +78,15 @@ export const signup = async (
     //setHeaders
     res.set("Location", "/");
     res.set("Set-Cookie", sessionCookie.serialize());
-
+    console.log('end or signup func')
     return res.status(201).json({
       isSuccess: true,
       message: "User registred successfully",
       result: savedUser,
-    });
+    });  
+
   } catch (error: any) {
+    console.log(error)
     if (error instanceof ZodError) {
       return res.status(400).json({
         isSuccess: false,
@@ -131,10 +139,23 @@ export const login = async (
   try {
     const validEmail = z.string().parse(req.body.email);
     const validPassword = z.string().parse(req.body.password);
+    // console.log(db)
+    console.log('inside login 1')
 
+    // return res.status(200).json({
+    //   isSuccess:true,
+    //   message:"HELO",
+    //   result: "HELLO" as any
+    // })
+    // const dat =  db.select().from(userSchema)
+    // console.log(dat)
     const user = await db.query.userSchema.findFirst({
       where: eq(userSchema.email, validEmail),
     });
+
+    console.log(user)
+
+    console.log('inside login 2')
 
     if (!user) {
       return res.status(404).json({
@@ -143,7 +164,7 @@ export const login = async (
         message: "Invalid email or password",
       });
     }
-    const isValidPassword = await verify(user.password, validPassword, hashOptions);
+    const isValidPassword = await password.verify(user.password, validPassword,"argon2d",);
 
     if (!isValidPassword) {
       return res.status(404).json({
@@ -171,14 +192,14 @@ export const login = async (
     });
   } catch (err: any) {
     if (err instanceof ZodError) {
-      return res.status(201).json({
+      return res.status(400).json({
         isSuccess: false,
         message: err.message,
         issues: err.issues,
       });
     }
 
-    return res.status(201).json({
+    return res.status(500).json({
       isSuccess: false,
       message: err.message,
       issues: [],
@@ -329,7 +350,11 @@ export const verifyAndResetPassword = async (
       .where(eq(resetTokenSchema.tokenHash, hashedToken));
     await lucia.invalidateUserSessions(savedToken.userId);
 
-    const passwordHash = await hash(validPassword, hashOptions);
+    const passwordHash = await password.hash(validPassword, {
+      algorithm:'argon2d',
+      memoryCost:hashOptions.memoryCost,
+      timeCost:hashOptions.timeCost
+    });
 
     await db
       .update(userSchema)
