@@ -137,6 +137,10 @@ export const login = async (
   res: Response<Res<{ email: string; name: string; id: string; email_verified: boolean }>>
 ) => {
   try {
+    // let a= true
+    // if(a){
+    //   throw new Error("This is a trial error")
+    // }
     const validEmail = z.string().parse(req.body.email);
     const validPassword = z.string().parse(req.body.password);
     // console.log(db)

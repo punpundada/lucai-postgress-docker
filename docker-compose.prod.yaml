@@ -1,28 +1,24 @@
 version: '3.8'
 
 services:
+
   backend:
-    env_file:
-      - .env
-    environment:
-      - DB_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-    container_name: auth_backend
-    build: 
+    #image: imageName will be used once pushed to dockerhub insted of 'build'
+    build:
       context: .
       dockerfile: Dockerfile
-      target: development
-    command: bun run dev #over-riding the default RUN bun run build command from docker file
+      target: production
+    env_file:
+      - .env
+    volumes:
+      - /usr/src/app/node_modules
     ports:
       - "${PORT}:${PORT}"
+    environment:
+      - DB_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
     depends_on:
       - db
-    develop:
-      watch:
-        - action: sync
-          path: ./src
-          target: /usr/src/app/src
-        - action: rebuild
-          path: package.json
+
 
   db:
     image: postgres:16.3-alpine3.18

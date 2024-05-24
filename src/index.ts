@@ -40,9 +40,12 @@ const connectDB = async () => {
 
 while (retry > 0){
 try {
-	await connectDB();
+	await client.connect();
 	break;
 } catch (error) {
+	if(retry < 0){
+		process.exit(1)
+	}
 	retry = retry -1;
 	console.log(error)
 	console.log('Trying to connect db failed remaining attempts: '+retry + ". Waiting for 2000ms")
@@ -86,9 +89,10 @@ app.use(protectionCSRF)
 app.use('/api/user',userRoute)
 app.get('/hello-world',(req,res)=>{
 	return res.status(200).json({
-		message:"Hello World!"
+		message:"Hello World!,prajwal"
 	})
 })
 app.listen(process.env.PORT, () => {
+	console.log(process.env.DB_URL)
   console.log(`server running on http://localhost:${process.env.PORT}/api`);
 });
