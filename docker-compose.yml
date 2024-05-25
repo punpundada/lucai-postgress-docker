@@ -1,3 +1,9 @@
+# docker compose -f docker-compose.prod.yml up
+
+# docker-compose up \
+# --build \
+# --env ARG_NAME=value \
+# --env-file .env
 version: '3.8'
 
 services:
@@ -11,6 +17,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: development
+      args:
+        - name=value
     command: bun run dev #over-riding the default RUN bun run build command from docker file
     ports:
       - "${PORT}:${PORT}"
