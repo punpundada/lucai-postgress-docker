@@ -35,7 +35,7 @@ export const resetPasswordView = ({redirectURL}: resetPassword) => {
                 margin-bottom: 5px;
             }
             .container a {
-                color: #007bff;
+                color: black,
                 text-decoration: none;
                 font-weight: bold;
                 background-color: #007bff;
@@ -46,7 +46,7 @@ export const resetPasswordView = ({redirectURL}: resetPassword) => {
             }
             .container a:hover {
                 background-color: #0056b3;
-                color: #ffffff;
+                color:black;
             }
         </style>
     </head>
