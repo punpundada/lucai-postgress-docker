@@ -10,7 +10,12 @@ export default defineConfig({
 ],
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DB_URL!,
+    // url: process.env.DB_URL!,
+    database:process.env.POSTGRES_DB!,
+    host:"localhost"!,
+    password:process.env.POSTGRES_PASSWORD!,
+    user:process.env.POSTGRES_USER!,
+    port:+process.env.PORT!
   },
   verbose: true,
   strict: true,

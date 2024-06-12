@@ -29,7 +29,12 @@ declare module "lucia" {
 }
 
 const client = new Client({
-  connectionString: process.env.DB_URL!,
+  // connectionString: process.env.DB_URL!,
+  database:process.env.POSTGRES_DB!,
+  host:"localhost"!,
+  password:process.env.POSTGRES_PASSWORD!,
+  user:process.env.POSTGRES_USER!,
+  port:+process.env.PORT!
 });
 
 // await new Promise((res) => setTimeout(res, 10000));
